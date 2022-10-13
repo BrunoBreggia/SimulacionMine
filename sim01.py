@@ -26,27 +26,26 @@ import json
 
 import torch
 
-from Implementacion_de_MINE.mine import Mine
+from mine.mine import Mine
 import numpy as np
 import torch.optim as opt
 # import matplotlib.pyplot as plt
 import random
-from Implementacion_de_MINE.modelos import StandardModel
-from Implementacion_de_MINE.mine_ema import MineEMA
+from mine.modelos import StandardModel
+from mine.mine_ema import MineEMA
 from copy import deepcopy
 # import sys
 import pandas as pd
 from datetime import datetime
 import os
-import h5py
 
 sim = "sim01"
 params = {"sim": sim}
 
-C = 1
-T = 1
-R = 1
-REA = 1
+C = 1  # indice de cantidad de capas
+T = 1  # indice de tipo de mine
+R = 1  # indice de rho
+REA = 30
 
 CAPA = [3, 4, 5]
 TIPO = ['Mine', 'MineEMA']
@@ -80,11 +79,11 @@ params['data_mu'] = [0, 0]
 # np.random.seed(0) # always using same numpy seed
 # random.seed(0)
 
-epocas = [2**9] # [2 ** i for i in range(8, 12)]
-Muestras = [2**9] # [2 ** i for i in range(9, 15)]
-Neuronas = [25] #[25, 50, 100, 200]
-Activacion = ["relu"]#, "leakyrelu", "gelu", "elu"]
-Batch_frac = [1/4]#, 1/2, 1]
+epocas = [2 ** i for i in range(8, 12)]
+Muestras = [2 ** i for i in range(9, 15)]
+Neuronas = [25, 50, 100, 200]
+Activacion = ["relu", "leakyrelu", "gelu", "elu"]
+Batch_frac = [1/4, 1/2, 1]
 
 params['epocas'] = epocas
 params['muestras'] = Muestras
