@@ -42,9 +42,9 @@ import os
 sim = "sim01"
 params = {"sim": sim}
 
-C = 1  # indice de cantidad de capas
-T = 1  # indice de tipo de mine
-R = 1  # indice de rho
+C = 1
+T = 1
+R = 1
 REA = 30
 
 CAPA = [3, 4, 5]
