@@ -63,7 +63,7 @@ params['rhos'] = RHO
 
 capas = CAPA[C]
 tipo = TIPO[T]
-rho = RHO[R]
+rho = RHO[R-1]
 
 params['capa'] = capas
 params['tipo'] = tipo
@@ -106,7 +106,7 @@ if not os.path.isdir(OUTDIR):
     print("created folder : ", OUTDIR, flush=True)
 else:
     print(OUTDIR, "folder already exists.", flush=True)
-oname = f"{OUTDIR}/{sim}_C{C}_T{T}_R{R}.json"
+oname = f"{OUTDIR}/{sim}_C{C}_T{T}_R{R-1}.json"
 
 
 def generacion_de_datos(samples):
@@ -196,7 +196,7 @@ def main():
                         'batch': int(frac_batch * muestras),
                         'capas': capas,
                         'mine': tipo,
-                        'rho': RHO[R],
+                        'rho': rho,
                         'im_entrenamiento': [],
                         'im_testeo': [],
                         'im_verdadera': None
