@@ -32,7 +32,7 @@ from mine.mine2 import Mine2
 # variables de simulacion
 RHO_IDX = 1
 CAPAS_IDX = 1
-REA = 1  # 16 30 48
+REA = 1
 
 # variables de archivo
 rho = [0.1, 0.5, 0.9][RHO_IDX]
