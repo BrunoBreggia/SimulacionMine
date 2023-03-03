@@ -27,7 +27,7 @@ import os
 import ray
 import time
 import pandas as pd
-from mine2 import Mine2
+from mine.mine2 import Mine2
 
 # variables de simulacion
 RHO_IDX = 1
