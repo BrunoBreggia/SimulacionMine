@@ -43,7 +43,12 @@ epocas = [1_000, 5_000, ]#10_000, 50_000]
 neuronas = [30, 60, 90]  # [NEURONAS_IDX]
 # cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
 cuda = "cpu"
-output_file = 'simulation_data.csv'
+# output file
+sim = "sim02"
+path = os.getcwd()
+OUTDIR = path + "/outData"
+output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_C{CAPAS_IDX}_R{REA}.csv"
+
 
 # Obtencion de datos de simulacion
 # media
