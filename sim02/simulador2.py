@@ -9,7 +9,7 @@ Se usará la implementación tradicional de MINE (Mutual information neural esti
 [SimConfig]
 Sim_filename='Exp_02'
 Sim_variables={'RHO_IDX':[0,1,2],'CAPAS_IDX':[0,1,2]}
-Sim_realizations={'REA':1}
+Sim_realizations={'REA':48}
 Sim_name='E02'
 Sim_hostname='cluster-fiuner'
 [endSimConfig]
@@ -31,8 +31,8 @@ from mine.mine2 import Mine2
 
 # variables de simulacion
 RHO_IDX = 1
-CAPAS_IDX = 0
-REA = 48  # 16 30 48
+CAPAS_IDX = 1
+REA = 1  # 16 30 48
 
 # variables de archivo
 rho = [0.1, 0.5, 0.9][RHO_IDX]
