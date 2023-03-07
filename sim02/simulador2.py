@@ -9,7 +9,7 @@ Se usará la implementación tradicional de MINE (Mutual information neural esti
 [SimConfig]
 Sim_filename='Exp_02'
 Sim_variables={'RHO_IDX':[0,1,2],'CAPAS_IDX':[0,1,2]}
-Sim_realizations={'REA':48}
+Sim_realizations={'REA':1}
 Sim_name='E02'
 Sim_hostname='cluster-fiuner'
 [endSimConfig]
@@ -33,22 +33,27 @@ from mine.mine2 import Mine2
 RHO_IDX = 1
 CAPAS_IDX = 1
 REA = 1
+subREA = 48
 
 # variables de archivo
 rho = [0.1, 0.5, 0.9][RHO_IDX]
 capas = [1, 2, 3][CAPAS_IDX]
 lr = 0.5
-minibatches = [1, 10,]# 100]
-epocas = [1_000, 5_000, ]#10_000, 50_000]
-neuronas = [30, 60, 90]  # [NEURONAS_IDX]
+minibatches = [1, 10, 100]
+epocas = [1_000, 5_000, 10_000, 50_000]
+neuronas = [30, 60, 90]
 # cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
 cuda = "cpu"
 # output file
 sim = "sim02"
 path = os.getcwd()
 OUTDIR = path + "/outData"
-output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_C{CAPAS_IDX}_R{REA}.csv"
-
+if not os.path.isdir(OUTDIR):
+    os.makedirs(OUTDIR)
+    print("created folder : ", OUTDIR, flush=True)
+else:
+    print(OUTDIR, "folder already exists.", flush=True)
+output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_C{CAPAS_IDX}_R{subREA}.csv"
 
 # Obtencion de datos de simulacion
 # media
@@ -67,41 +72,56 @@ z = torch.from_numpy(Z_samples).float().to(device=cuda)
 true_mi = -0.5 * np.log(np.linalg.det(cov_matrix))
 
 # inicializo ray
-ray.init(num_cpus=REA)
+ray.init(num_cpus=subREA)
 
+# diccionario para los datos de cada realizacion -> convertir a dataframe
+data = {}
+data["rho"] = []
+data["true_mi"] = []
+data["samples"] = []
+data["LR"] = []
+data["capas"] = []
+data["neuronas"] = []
+data["minibatches"] = []
+for epoca in epocas:
+    data[f"{epoca} epocas"] = []
 
 @ray.remote
 def correr_epocas(red: Mine2, epocas: list, n_eval: int):
-    data = {}
-    data["rho"] = [rho]
-    data["true_mi"] = [true_mi]
-    data["samples"] = [samples]
-    data["LR"] = [lr]
-    data["capas"] = [capas]
-    data["neuronas"] = [neuronas]
-    data["minibatches"] = [red.minibatches]
+    dataLocal = {}
+    dataLocal["rho"] = rho
+    dataLocal["true_mi"] = true_mi
+    dataLocal["samples"] = samples
+    dataLocal["LR"] = lr
+    dataLocal["capas"] = capas
+    dataLocal["neuronas"] = neuronas
+    dataLocal["minibatches"] = red.minibatches
     for epoca in epocas:
         red.run_epochs(x, z, epoca, viewProgress=False)
-        # prom = 0
-        # for i in range(n_eval):
-        #     prom += (red.estimate_mi(x, z) - prom)/(i+1)
         testing = [red.estimate_mi(x, z) for _ in range(n_eval)]
         prom = np.mean(testing)
-        data[f"{epoca} epocas"] = [prom]
-    data_df = pd.DataFrame(data)
-    data_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
+        dataLocal[f"{epoca} epocas"] = prom
+    return dataLocal
 
 
 if __name__ == '__main__':
     mines = []
     for neurona in neuronas:
         for minibatch in minibatches:
-            for rea in range(REA):
+            for rea in range(subREA):
                 mines.append(Mine2(capas, neurona, lr, minibatch, cuda="cpu"))
             tic = time.time()
             process_ids = [correr_epocas.remote(mine, epocas, 1000) for mine in mines]
-            ray.get(process_ids)
+            realizaciones = ray.get(process_ids)
+            for realizacion in realizaciones:
+                for key in data.keys():
+                    data[key].append(realizacion[key])
             toc = time.time()
             mines.clear()
+
+    # Pasamos el dataframe a un csv
+    data_df = pd.DataFrame(data)
+    data_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
+
             # print(f"Simulacion terminada. Tiempo: {toc - tic}")
     # print("Simulaciones terminadas")
