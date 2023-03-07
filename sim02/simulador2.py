@@ -27,6 +27,7 @@ import os
 import ray
 import time
 import pandas as pd
+from datetime import datetime
 from mine.mine2 import Mine2
 
 # variables de simulacion
@@ -104,7 +105,7 @@ def correr_epocas(red: Mine2, epocas: list, n_eval: int):
     return dataLocal
 
 
-if __name__ == '__main__':
+def main():
     mines = []
     for neurona in neuronas:
         for minibatch in minibatches:
@@ -123,5 +124,14 @@ if __name__ == '__main__':
     data_df = pd.DataFrame(data)
     data_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
 
-            # print(f"Simulacion terminada. Tiempo: {toc - tic}")
-    # print("Simulaciones terminadas")
+
+if __name__ == '__main__':
+    inicio = datetime.now()
+    print("inicio:", inicio, flush=True)
+
+    main()
+
+    final = datetime.now()
+    print("inicio:", inicio, flush=True)
+    print("final:", final, flush=True)
+
