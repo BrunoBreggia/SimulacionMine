@@ -121,7 +121,7 @@ def main():
             toc = time.time()
             mines.clear()
             # mostrar grado de avance
-            print("Progress:", (i_n+1)*(i_m+1)/cantidad_total, "%", flush=True)
+            print("Progress:", (i_n+1)*(i_m+1)*100/cantidad_total, "%", flush=True)
 
     # Pasamos el dataframe a un csv
     data_df = pd.DataFrame(data)
