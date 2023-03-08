@@ -95,7 +95,7 @@ def correr_epocas(red: Mine2, epocas: list, n_eval: int):
     dataLocal["samples"] = samples
     dataLocal["LR"] = lr
     dataLocal["capas"] = capas
-    dataLocal["neuronas"] = neuronas
+    dataLocal["neuronas"] = red.neurons
     dataLocal["minibatches"] = red.minibatches
     for epoca in epocas:
         red.run_epochs(x, z, epoca, viewProgress=False)
