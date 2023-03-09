@@ -108,8 +108,10 @@ def correr_epocas(red: Mine2, epocas: list, n_eval: int):
 def main():
     mines = []
     cantidad_total = len(neuronas)*len(minibatches)
+    counter = 0
     for i_n, neurona in enumerate(neuronas):
         for i_m, minibatch in enumerate(minibatches):
+            counter += 1
             for rea in range(subREA):
                 mines.append(Mine2(capas, neurona, lr, minibatch, cuda="cpu"))
             tic = time.time()
@@ -121,7 +123,7 @@ def main():
             toc = time.time()
             mines.clear()
             # mostrar grado de avance
-            print("Progress:", (i_n+1)*(i_m+1)*100/cantidad_total, "%", flush=True)
+            print("Progress:", counter/cantidad_total*100, "%", flush=True)
 
     # Pasamos el dataframe a un csv
     data_df = pd.DataFrame(data)
