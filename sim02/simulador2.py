@@ -97,8 +97,11 @@ def correr_epocas(red: Mine2, epocas: list, n_eval: int):
     dataLocal["capas"] = capas
     dataLocal["neuronas"] = red.neurons
     dataLocal["minibatches"] = red.minibatches
-    for epoca in epocas:
-        red.run_epochs(x, z, epoca, viewProgress=False)
+    for i in range(len(epocas)):
+        if i == 0:
+            red.run_epochs(x, z, epocas[i], viewProgress=False)
+        else:
+            red.run_epochs(x, z, epocas[i]-epocas[i-1], viewProgress=False)
         testing = [red.estimate_mi(x, z) for _ in range(n_eval)]
         prom = np.mean(testing)
         dataLocal[f"{epoca} epocas"] = prom
