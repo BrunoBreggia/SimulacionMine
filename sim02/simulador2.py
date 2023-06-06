@@ -31,21 +31,18 @@ from datetime import datetime
 from mine.mine2 import Mine2
 
 # variables de simulacion
-RHO_IDX = 0
+RHO_IDX = 1
 CAPAS_IDX = 1
 REA = 1
-subREA = 2
+subREA = 48
 
 # variables de archivo
 rho = [0.1, 0.5, 0.9][RHO_IDX]
 capas = [1, 2, 3][CAPAS_IDX]
-lr = 1e-4 # 0.5
-# minibatches = [1, 10, 100]
-minibatches = [100]
-# epocas = [1_000, 5_000, 10_000, 50_000]
-epocas = [1_000]
-# neuronas = [30, 60, 90]
-neuronas = [30]
+lr = 0.5
+minibatches = [1, 10, 100]
+epocas = [1_000, 5_000, 10_000, 50_000]
+neuronas = [30, 60, 90]
 # cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
 cuda = "cpu"
 # output file
@@ -76,7 +73,7 @@ z = torch.from_numpy(Z_samples).float().to(device=cuda)
 true_mi = -0.5 * np.log(np.linalg.det(cov_matrix))
 
 # inicializo ray
-# ray.init(num_cpus=subREA)
+ray.init(num_cpus=subREA)
 
 # diccionario para los datos de cada realizacion -> convertir a dataframe
 data = {}
@@ -90,7 +87,7 @@ data["minibatches"] = []
 for epoca in epocas:
     data[f"{epoca} epocas"] = []
 
-# @ray.remote
+@ray.remote
 def correr_epocas(red: Mine2, epocas: list, n_eval: int):
     dataLocal = {}
     dataLocal["rho"] = rho
@@ -101,11 +98,9 @@ def correr_epocas(red: Mine2, epocas: list, n_eval: int):
     dataLocal["neuronas"] = red.neurons
     dataLocal["minibatches"] = red.minibatches
     for epoca in epocas:
-        print("Comienza el entrenaminto")
         red.run_epochs(x, z, epoca, viewProgress=False)
-        print("Termina el entrenaminto")
-        # testing = [red.estimate_mi(x, z)]
-        prom = red.estimate_mi(x, z)
+        testing = [red.estimate_mi(x, z) for _ in range(n_eval)]
+        prom = np.mean(testing)
         dataLocal[f"{epoca} epocas"] = prom
     return dataLocal
 
@@ -118,9 +113,8 @@ def main():
             for rea in range(subREA):
                 mines.append(Mine2(capas, neurona, lr, minibatch, cuda="cpu"))
             tic = time.time()
-            #process_ids = [correr_epocas.remote(mine, epocas, 1000) for mine in mines]
-            #realizaciones = ray.get(process_ids)
-            realizaciones = [correr_epocas(mine, epocas, 1000) for mine in mines]
+            process_ids = [correr_epocas.remote(mine, epocas, 1000) for mine in mines]
+            realizaciones = ray.get(process_ids)
             for realizacion in realizaciones:
                 for key in data.keys():
                     data[key].append(realizacion[key])
