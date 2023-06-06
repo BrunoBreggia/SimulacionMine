@@ -7,8 +7,8 @@ Se usará la implementación tradicional de MINE (Mutual information neural esti
 
 --------------------------------------------------------------------------------------
 [SimConfig]
-Sim_filename='Exp_02'
-Sim_variables={'RHO_IDX':[0,1,2],'CAPAS_IDX':[0,1,2]}
+Sim_filename='Exp_03'
+Sim_variables={'RHO_IDX':[0,1,2],'ACT_IDX':[0,1,2]}
 Sim_realizations={'REA':1}
 Sim_name='E02'
 Sim_hostname='cluster-fiuner'
@@ -32,14 +32,14 @@ from mine.mine2 import Mine2
 
 # variables de simulacion
 RHO_IDX = 0
-CAPAS_IDX = 1
+ACT_IDX = 0
 REA = 1
 subREA = 2
 
 # variables de archivo
-rho = [0.1, 0.5, 0.9][RHO_IDX]
-capas = [1, 2, 3][CAPAS_IDX]
-lr = 1e-4 # 0.5
+rho = [0.0, 0.5, 0.98][RHO_IDX]
+actFunc = ["relu", "Lrelu", "elu"][ACT_IDX]
+lr = 1e-3  # 0.5
 # minibatches = [1, 10, 100]
 minibatches = [100]
 # epocas = [1_000, 5_000, 10_000, 50_000]
