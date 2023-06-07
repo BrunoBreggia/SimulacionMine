@@ -30,26 +30,33 @@ import pandas as pd
 from datetime import datetime
 from mine.mine2 import Mine2
 
-# variables de simulacion
+# ############# variables de simulacion  ##############
+# Indices fijados por simconfig
 RHO_IDX = 0
 ACT_IDX = 0
 REA = 1
 subREA = 2
+# TODO: preguntar a Feli que eran los subREA
 
 # variables de archivo
 rho = [0.0, 0.5, 0.98][RHO_IDX]
 actFunc = ["relu", "Lrelu", "elu"][ACT_IDX]
 lr = 1e-3  # 0.5
-# minibatches = [1, 10, 100]
-minibatches = [100]
-# epocas = [1_000, 5_000, 10_000, 50_000]
-epocas = [1_000]
-# neuronas = [30, 60, 90]
-neuronas = [30]
+train_percent = 0.8
+minibatch_percent = 0.125  # porcenaje respecto del total del batch de entrenamiento
+max_epocas = 15_000
+
+# variables a iterar en archivo
+valores_capas = [1, 2, 3]
+valores_neuronas = [50, 100, 200]
+valores_muestras = [1e3, 3e3, 5e3, 10e3]
+
+# donde va a correr la simulacion
 # cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
 cuda = "cpu"
-# output file
-sim = "sim02"
+
+# directorio con resultados
+sim = "sim03"
 path = os.getcwd()
 OUTDIR = path + "/outData"
 if not os.path.isdir(OUTDIR):
@@ -57,15 +64,27 @@ if not os.path.isdir(OUTDIR):
     print("created folder : ", OUTDIR, flush=True)
 else:
     print(OUTDIR, "folder already exists.", flush=True)
-output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_C{CAPAS_IDX}_R{subREA}.csv"
+output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_A{ACT_IDX}_R{subREA}.csv"  # TODO: por que aparece subREA aca
 
-# Obtencion de datos de simulacion
-# media
+# Diccionario para los datos de cada realizacion -> convertir a dataframe
+data = {
+    "rho": [],
+    "true_mi": [],
+    "samples": [],
+    "LR": [],
+    "capas": [],
+    "neuronas": [],
+    "minibatches": [],
+    "ultima_epoca": []
+}
+
+# ##############  Generacion de señales aleatorias  ###############
+# defino la media
 mu = np.array([0, 0])
-# covarianza
+# defino covarianza
 cov_matrix = np.array([[1, rho], [rho, 1]])
 # Genero la señal
-samples = 5000
+samples = 5000  # TODO: a esto volverlo variable. Capaz creo funcion para generar señales aleatorias
 joint_samples_train = np.random.multivariate_normal(mean=mu, cov=cov_matrix, size=(samples, 1))
 X_samples = joint_samples_train[:, :, 0]
 Z_samples = joint_samples_train[:, :, 1]
@@ -75,20 +94,8 @@ z = torch.from_numpy(Z_samples).float().to(device=cuda)
 # Entropia mediante formula
 true_mi = -0.5 * np.log(np.linalg.det(cov_matrix))
 
-# inicializo ray
+# ############## inicializo ray ##############
 # ray.init(num_cpus=subREA)
-
-# diccionario para los datos de cada realizacion -> convertir a dataframe
-data = {}
-data["rho"] = []
-data["true_mi"] = []
-data["samples"] = []
-data["LR"] = []
-data["capas"] = []
-data["neuronas"] = []
-data["minibatches"] = []
-for epoca in epocas:
-    data[f"{epoca} epocas"] = []
 
 # @ray.remote
 def correr_epocas(red: Mine2, epocas: list, n_eval: int):
