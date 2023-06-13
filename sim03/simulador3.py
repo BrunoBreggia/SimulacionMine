@@ -34,15 +34,15 @@ from mine.mine2 import Mine2
 # Iterables de la simulacion
 rhos = [0.0, 0.5, 0.98]  # Fijado por simulacion
 act_funcs = ["relu", "Lrelu", "elu"]  # Fijado por simulacion
-valores_capas = [1, 2, 3]
-valores_neuronas = [50, 100, 200]
-valores_muestras = [1e3, 3e3, 5e3, 10e3]
+valores_capas = [1, 2]  # , 3]
+valores_neuronas = [50, 100]  # , 200]
+valores_muestras = [1e3]  # , 3e3, 5e3, 10e3]
 
 # Indices fijados por simconfig
-RHO_IDX = 0
+RHO_IDX = 1
 ACT_IDX = 0
 DUMMY = 1
-REA = 24
+REA = 2  # 24
 
 # Constantes de archivo
 RHO = rhos[RHO_IDX]
@@ -137,7 +137,7 @@ def correr_epocas(red: Mine2, samples: int):
     dataLocal["LR_patience"] = LR_PATIENCE
     dataLocal["LR_factor"] = LR_FACTOR
     dataLocal["minibatch_size"] = minibatch_size
-    dataLocal["last_epoch"] = red.last_epoc
+    dataLocal["last_epoch"] = red.last_epoc()
     dataLocal["validation_avg"] = VALIDATION_AVG
     dataLocal["stop_patience"] = STOP_PATIENCE
 
@@ -161,7 +161,7 @@ def main():
         for index2, capas in enumerate(valores_capas):
             for index3, samples in enumerate(valores_muestras):
                 for _ in range(REA):
-                    mines.append(Mine2(capas, neuronas, ACT_FUNC,
+                    mines.append(Mine2(capas, neuronas, ACT_FUNC, cuda=cuda,
                                        validation_average=VALIDATION_AVG, stop_patience=STOP_PATIENCE))
                 realizaciones = [correr_epocas(mine, int(samples)) for mine in mines]
                 for rea in realizaciones:
@@ -193,7 +193,7 @@ def generate_aux_datafile():
     if not os.path.exists(auxFile_name):
         with open(auxFile_name, 'w', encoding='utf-8') as auxFile:
             for key in sim_iterables.keys():
-                auxFile.write(f"{key} : {sim_iterables[key]}")
+                print(f"{key} : {sim_iterables[key]}", file=auxFile)
 
 
 if __name__ == '__main__':
