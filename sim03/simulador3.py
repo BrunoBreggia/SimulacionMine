@@ -34,15 +34,15 @@ from mine.mine2 import Mine2
 # Iterables de la simulacion
 rhos = [0.0, 0.5, 0.98]  # Fijado por simulacion
 act_funcs = ["relu", "Lrelu", "elu"]  # Fijado por simulacion
-valores_capas = [1, 2]  # , 3]
-valores_neuronas = [50, 100]  # , 200]
-valores_muestras = [1e3]  # , 3e3, 5e3, 10e3]
+valores_capas = [1, 2, 3]
+valores_neuronas = [50, 100, 200]
+valores_muestras = [1e3, 3e3, 5e3, 10e3]
 
 # Indices fijados por simconfig
 RHO_IDX = 1
 ACT_IDX = 0
 DUMMY = 1
-REA = 2  # 24
+REA = 24
 
 # Constantes de archivo
 RHO = rhos[RHO_IDX]
