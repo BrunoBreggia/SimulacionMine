@@ -10,7 +10,7 @@ Se usará la implementación tradicional de MINE (Mutual information neural esti
 Sim_filename='Exp_03'
 Sim_variables={'RHO_IDX':[0,1,2],'ACT_IDX':[0,1,2]}
 Sim_realizations={'REA':1}
-Sim_name='E02'
+Sim_name='E03'
 Sim_hostname='cluster-fiuner'
 [endSimConfig]
 [SlurmConfig]
@@ -29,6 +29,7 @@ import time
 import pandas as pd
 from datetime import datetime
 from mine.mine2 import Mine2
+from copy import deepcopy
 
 # ############# variables de simulacion  ##############
 # Indices fijados por simconfig
@@ -39,12 +40,16 @@ subREA = 2
 # TODO: preguntar a Feli que eran los subREA
 
 # variables de archivo
-rho = [0.0, 0.5, 0.98][RHO_IDX]
-actFunc = ["relu", "Lrelu", "elu"][ACT_IDX]
-lr = 1e-3  # 0.5
-train_percent = 0.8
-minibatch_percent = 0.125  # porcenaje respecto del total del batch de entrenamiento
-max_epocas = 15_000
+RHO = [0.0, 0.5, 0.98][RHO_IDX]
+ACT_FUNC = ["relu", "Lrelu", "elu"][ACT_IDX]
+LR = 1e-3  # 0.5
+TRAIN_PERCENT = 0.8
+MINIBATCH_PERCENT = 0.10  # porcenaje respecto del total del dataset
+MAX_EPOCAS = 15_000
+LR_PATIENCE = 250
+LR_FACTOR = 0.5
+VALIDATION_AVG = 100
+STOP_PATIENCE = 1000
 
 # variables a iterar en archivo
 valores_capas = [1, 2, 3]
@@ -52,8 +57,8 @@ valores_neuronas = [50, 100, 200]
 valores_muestras = [1e3, 3e3, 5e3, 10e3]
 
 # donde va a correr la simulacion
-# cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
-cuda = "cpu"
+cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
+# cuda = "cpu"
 
 # directorio con resultados
 sim = "sim03"
@@ -67,74 +72,101 @@ else:
 output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_A{ACT_IDX}_R{subREA}.csv"  # TODO: por que aparece subREA aca
 
 # Diccionario para los datos de cada realizacion -> convertir a dataframe
-data = {
-    "rho": [],
-    "true_mi": [],
-    "samples": [],
-    "LR": [],
-    "capas": [],
-    "neuronas": [],
-    "minibatches": [],
-    "ultima_epoca": []
-}
+data = {}
+#     "rho": [],
+#     "true_mi": [],
+#     "samples": [],
+#     "LR": [],
+#     "capas": [],
+#     "neuronas": [],
+#     "minibatch_size": [],
+#     "ultima_epoca": []
+# }
+
 
 # ##############  Generacion de señales aleatorias  ###############
-# defino la media
-mu = np.array([0, 0])
-# defino covarianza
-cov_matrix = np.array([[1, rho], [rho, 1]])
-# Genero la señal
-samples = 5000  # TODO: a esto volverlo variable. Capaz creo funcion para generar señales aleatorias
-joint_samples_train = np.random.multivariate_normal(mean=mu, cov=cov_matrix, size=(samples, 1))
-X_samples = joint_samples_train[:, :, 0]
-Z_samples = joint_samples_train[:, :, 1]
-# Convert to tensors
-x = torch.from_numpy(X_samples).float().to(device=cuda)
-z = torch.from_numpy(Z_samples).float().to(device=cuda)
-# Entropia mediante formula
-true_mi = -0.5 * np.log(np.linalg.det(cov_matrix))
+def signal_generator(mean=(0, 0), correlation_rho=0.5, samples=1000):
+    """
+    Genero pares de señales aleatorias con distribución normal y coeficiente de correlación rho.
+    Devuelvo el par de señales generadas y el valor de información mutua correspondiente.
+    """
+    # defino la media
+    mu = np.array(mean)
+    # defino matriz de covarianza
+    cov_matrix = np.array([[1, correlation_rho], [correlation_rho, 1]])
+    # Genero la señal
+    joint_samples_train = np.random.multivariate_normal(mean=mu, cov=cov_matrix, size=(samples, 1))
+    X_samples = joint_samples_train[:, :, 0]
+    Z_samples = joint_samples_train[:, :, 1]
+    # Convert to tensors
+    x = torch.from_numpy(X_samples).float().to(device=cuda)
+    z = torch.from_numpy(Z_samples).float().to(device=cuda)
+    # Entropia mediante formula (para distribuciones normales)
+    true_mi = -0.5 * np.log(np.linalg.det(cov_matrix))
+    return (x, z), true_mi
 
 # ############## inicializo ray ##############
 # ray.init(num_cpus=subREA)
 
+
 # @ray.remote
-def correr_epocas(red: Mine2, epocas: list, n_eval: int):
+def correr_epocas(red: Mine2, samples: int):
     dataLocal = {}
-    dataLocal["rho"] = rho
+
+    (x, z), true_mi = signal_generator(correlation_rho=RHO, samples=samples)
+    minibatch_size = samples * MINIBATCH_PERCENT
+
+    red.fit(x, z, train_percent=TRAIN_PERCENT, minibatch_size=minibatch_size, learning_rate=LR,
+            num_epochs=MAX_EPOCAS, random_partition=True, patience=LR_PATIENCE, scaling_factor=LR_FACTOR)
+
+    estimador1, estimador2, estimador3 = red.estimacion_mi()
+
+    dataLocal["rho"] = RHO
     dataLocal["true_mi"] = true_mi
     dataLocal["samples"] = samples
-    dataLocal["LR"] = lr
-    dataLocal["capas"] = capas
+    dataLocal["LR"] = LR
+    dataLocal["LR_patience"] = LR_PATIENCE
+    dataLocal["LR_factor"] = LR_FACTOR
+    dataLocal["capas"] = red.hiddenLayers
     dataLocal["neuronas"] = red.neurons
-    dataLocal["minibatches"] = red.minibatches
-    for epoca in epocas:
-        print("Comienza el entrenaminto")
-        red.run_epochs(x, z, epoca, viewProgress=False)
-        print("Termina el entrenaminto")
-        # testing = [red.estimate_mi(x, z)]
-        prom = red.estimate_mi(x, z)
-        dataLocal[f"{epoca} epocas"] = prom
+    dataLocal["minibatch_size"] = minibatch_size
+    dataLocal["last_epoch"] = red.last_epoc
+    dataLocal["validation_avg"] = VALIDATION_AVG
+    dataLocal["stop_patience"] = STOP_PATIENCE
+
+    dataLocal["estimador1"] = estimador1[0]
+    dataLocal["estimador1_epoca"] = estimador1[1]
+    dataLocal["estimador2"] = estimador2[0]
+    dataLocal["estimador2_epoca"] = estimador2[1]
+    dataLocal["estimador3"] = estimador3[0]
+    dataLocal["estimador3_epoca"] = estimador3[1]
+
     return dataLocal
 
 
 def main():
     mines = []
-    cantidad_total = len(neuronas)*len(minibatches)
-    for i_n, neurona in enumerate(neuronas):
-        for i_m, minibatch in enumerate(minibatches):
-            for rea in range(subREA):
-                mines.append(Mine2(capas, neurona, lr, minibatch, cuda="cpu"))
-            tic = time.time()
-            #process_ids = [correr_epocas.remote(mine, epocas, 1000) for mine in mines]
-            #realizaciones = ray.get(process_ids)
-            realizaciones = [correr_epocas(mine, epocas, 1000) for mine in mines]
-            for realizacion in realizaciones:
-                for key in data.keys():
-                    data[key].append(realizacion[key])
-            toc = time.time()
-            mines.clear()
-            # mostrar grado de avance
-            print("Progress:", (i_n+1)*(i_m+1)*100/cantidad_total, "%", flush=True)
+    cantidad_total = len(valores_neuronas)*len(valores_capas)*len(valores_muestras)
+    counter = 0
+
+    for index1, neuronas in enumerate(valores_neuronas):
+        for index2, capas in enumerate(valores_capas):
+            for index3, samples in enumerate(valores_muestras):
+                for _ in range(subREA):
+                    mines.append(Mine2(capas, neuronas, ACT_FUNC,
+                                       validation_average=VALIDATION_AVG, stop_patience=STOP_PATIENCE))
+                realizaciones = [correr_epocas(mine, int(samples)) for mine in mines]
+                for rea in realizaciones:
+                    for key in rea.keys():
+                        if key not in data.keys():
+                            data[key] = []
+                        data[key].append(rea[key])
+                # toc = time.time()
+                mines.clear()
+                # mostrar grado de avance
+                counter += 1
+                progress = counter/cantidad_total * 100
+                print(f"Progress: {progress} %", flush=True)
 
     # Pasamos el dataframe a un csv
     data_df = pd.DataFrame(data)
