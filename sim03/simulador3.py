@@ -7,7 +7,7 @@ Se usará la implementación tradicional de MINE (Mutual information neural esti
 
 --------------------------------------------------------------------------------------
 [SimConfig]
-Sim_filename='Exp_03'
+Sim_filename='Exp03'
 Sim_variables={'RHO_IDX':[0,1,2],'ACT_IDX':[0,1,2]}
 Sim_realizations={'DUMMY':1}
 Sim_name='E03'
@@ -40,14 +40,14 @@ valores_muestras = [1e3, 3e3, 5e3, 10e3]
 
 # Indices fijados por simconfig
 RHO_IDX = 1
-ACT_IDX = 0
+ACT_IDX = 1
 DUMMY = 1
 REA = 24
 
 # Constantes de archivo
 RHO = rhos[RHO_IDX]
 ACT_FUNC = act_funcs[ACT_IDX]
-LR = 1e-3  # 0.5
+LR = 1e-3  # 0.001
 TRAIN_PERCENT = 80  # porcentaje respecto del total del dataset
 MINIBATCH_PERCENT = 0.10  # porcentaje respecto del total del dataset
 MAX_EPOCAS = 15_000
@@ -55,6 +55,8 @@ LR_PATIENCE = 250
 LR_FACTOR = 0.5
 VALIDATION_AVG = 100
 STOP_PATIENCE = 1000
+# TODO: podria crear aca el diccionario con los datos globales de la simulacion
+#  en vez de hacerlo en la función de abajo de todo.
 
 # Donde va a correr la simulacion
 cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -69,19 +71,7 @@ if not os.path.isdir(OUTDIR):
     print("created folder : ", OUTDIR, flush=True)
 else:
     print(OUTDIR, "folder already exists.", flush=True)
-output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_A{ACT_IDX}_R{REA}.csv"
-
-# Diccionario para los datos de cada realizacion -> convertir a dataframe
-data = {}
-#     "rho": [],
-#     "true_mi": [],
-#     "samples": [],
-#     "LR": [],
-#     "capas": [],
-#     "neuronas": [],
-#     "minibatch_size": [],
-#     "ultima_epoca": []
-# }
+output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_A{ACT_IDX}.csv"
 
 
 # ##############  Generacion de señales aleatorias  ###############
@@ -108,11 +98,15 @@ def signal_generator(mean=(0, 0), correlation_rho=0.5, samples=1000):
 # ############## inicializo ray ##############
 # ray.init(num_cpus=REA)
 
-
-# @ray.remote
+# TODO: instanciar mine aqui entro.
+#  Debe recibir como paramteros neuronas, capas, etc
+# @ray.remote  # TODO: Descomentar el ray y correr en la compu de la oficina
 def correr_epocas(red: Mine2, samples: int):
     dataLocal = {}
 
+    # TODO: llamar una sola vez a generar datos para todas las simulaciones
+    #  usando el ray.put, por lo que esta linea deberia ir por fuera del corer_epocas
+    #  y recibir las señales como parametro
     (x, z), true_mi = signal_generator(correlation_rho=RHO, samples=samples)
     minibatch_size = int(samples * MINIBATCH_PERCENT)
 
@@ -121,6 +115,8 @@ def correr_epocas(red: Mine2, samples: int):
 
     estimador1, estimador2, estimador3 = red.estimacion_mi()
 
+    # TODO: no repetir tanto los datos comunes a todas las realizaciones
+    #  Meter la info en comun en un archivo externo, comun para todas las realizaciones
     # # Almacenamiento de datos de la realizacion # #
     # Parametros de la señal
     dataLocal["rho"] = RHO
@@ -157,9 +153,13 @@ def main():
     cantidad_total = len(valores_neuronas)*len(valores_capas)*len(valores_muestras)
     counter = 0
 
+    data = {}
+
     for index1, neuronas in enumerate(valores_neuronas):
         for index2, capas in enumerate(valores_capas):
             for index3, samples in enumerate(valores_muestras):
+                # TODO: cambiar este for. Que se llame a correr epocas aplicado a ray
+                #  y que se guarden ls IDs (fijarse el codigo de Feli)
                 for _ in range(REA):
                     mines.append(Mine2(capas, neuronas, ACT_FUNC, cuda=cuda,
                                        validation_average=VALIDATION_AVG, stop_patience=STOP_PATIENCE))
@@ -182,6 +182,8 @@ def main():
 
 
 def generate_aux_datafile():
+    # TODO: tambien agregar os parametros que son constantes y
+    #  comunes a todas las realizaciones
     sim_iterables = {
         "rhos": rhos,
         "act_funcs": act_funcs,
