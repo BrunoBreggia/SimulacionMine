@@ -49,17 +49,15 @@ RHO = rhos[RHO_IDX]
 ACT_FUNC = act_funcs[ACT_IDX]
 LR = 1e-3  # 0.001
 TRAIN_PERCENT = 80  # porcentaje respecto del total del dataset
-MINIBATCH_PERCENT = 0.10  # porcentaje respecto del total del dataset
-MAX_EPOCAS = 15_000
+MINIBATCH_PERCENT = 10  # porcentaje respecto del total del dataset
+MAX_EPOCH = 15_000
 LR_PATIENCE = 250
 LR_FACTOR = 0.5
 VALIDATION_AVG = 100
 STOP_PATIENCE = 1000
-# TODO: podria crear aca el diccionario con los datos globales de la simulacion
-#  en vez de hacerlo en la función de abajo de todo.
 
 # Donde va a correr la simulacion
-cuda = "cuda:0" if torch.cuda.is_available() else "cpu"
+CUDA = "cuda:0" if torch.cuda.is_available() else "cpu"
 # cuda = "cpu"
 
 # Directorio con resultados
@@ -72,6 +70,9 @@ if not os.path.isdir(OUTDIR):
 else:
     print(OUTDIR, "folder already exists.", flush=True)
 output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_A{ACT_IDX}.csv"
+
+# ##############  Inicializo ray  ###############
+ray.init(num_cpus=REA)
 
 
 # ##############  Generacion de señales aleatorias  ###############
@@ -89,39 +90,35 @@ def signal_generator(mean=(0, 0), correlation_rho=0.5, samples=1000):
     X_samples = joint_samples_train[:, :, 0]
     Z_samples = joint_samples_train[:, :, 1]
     # Convert to tensors
-    x = torch.from_numpy(X_samples).float().to(device=cuda)
-    z = torch.from_numpy(Z_samples).float().to(device=cuda)
+    x = torch.from_numpy(X_samples).float().to(device=CUDA)
+    z = torch.from_numpy(Z_samples).float().to(device=CUDA)
     # Entropia mediante formula (para distribuciones normales)
     true_mi = -0.5 * np.log(np.linalg.det(cov_matrix))
     return (x, z), true_mi
 
-# ############## inicializo ray ##############
-# ray.init(num_cpus=REA)
 
-# TODO: instanciar mine aqui entro.
-#  Debe recibir como paramteros neuronas, capas, etc
-# @ray.remote  # TODO: Descomentar el ray y correr en la compu de la oficina
-def correr_epocas(red: Mine2, samples: int):
-    dataLocal = {}
+# @ray.remote(num_cpus=1, num_gpus=0.125, max_calls=1)
+@ray.remote
+def entrenar_red(x, z, true_mi,  neuronas:int, capas:int):
+    # Instancio la red
+    red = Mine2(capas, neuronas, ACT_FUNC, cuda=CUDA,
+                validation_average=VALIDATION_AVG, stop_patience=STOP_PATIENCE)
 
-    # TODO: llamar una sola vez a generar datos para todas las simulaciones
-    #  usando el ray.put, por lo que esta linea deberia ir por fuera del corer_epocas
-    #  y recibir las señales como parametro
-    (x, z), true_mi = signal_generator(correlation_rho=RHO, samples=samples)
-    minibatch_size = int(samples * MINIBATCH_PERCENT)
-
+    # Entreno la red
+    minibatch_size = int(len(x) * MINIBATCH_PERCENT / 100)
     red.fit(x, z, train_percent=TRAIN_PERCENT, minibatch_size=minibatch_size, learning_rate=LR,
-            num_epochs=MAX_EPOCAS, random_partition=True, patience=LR_PATIENCE, scaling_factor=LR_FACTOR)
+            num_epochs=MAX_EPOCH, random_partition=True, patience=LR_PATIENCE, scaling_factor=LR_FACTOR)
 
+    # Obtengo las estimaciones
     estimador1, estimador2, estimador3 = red.estimacion_mi()
 
-    # TODO: no repetir tanto los datos comunes a todas las realizaciones
-    #  Meter la info en comun en un archivo externo, comun para todas las realizaciones
     # # Almacenamiento de datos de la realizacion # #
+    dataLocal = {}
+
     # Parametros de la señal
     dataLocal["rho"] = RHO
     dataLocal["true_mi"] = true_mi
-    dataLocal["samples"] = samples
+    dataLocal["samples"] = len(x)
 
     # Parametros constructivos de la red
     dataLocal["capas"] = red.hiddenLayers
@@ -134,6 +131,7 @@ def correr_epocas(red: Mine2, samples: int):
     dataLocal["LR_factor"] = LR_FACTOR
     dataLocal["minibatch_size"] = minibatch_size
     dataLocal["last_epoch"] = red.last_epoc()
+    dataLocal["max_epoch"] = MAX_EPOCH
     dataLocal["validation_avg"] = VALIDATION_AVG
     dataLocal["stop_patience"] = STOP_PATIENCE
 
@@ -155,20 +153,23 @@ def main():
 
     data = {}
 
-    for index1, neuronas in enumerate(valores_neuronas):
-        for index2, capas in enumerate(valores_capas):
-            for index3, samples in enumerate(valores_muestras):
-                # TODO: cambiar este for. Que se llame a correr epocas aplicado a ray
-                #  y que se guarden ls IDs (fijarse el codigo de Feli)
-                for _ in range(REA):
-                    mines.append(Mine2(capas, neuronas, ACT_FUNC, cuda=cuda,
-                                       validation_average=VALIDATION_AVG, stop_patience=STOP_PATIENCE))
-                realizaciones = [correr_epocas(mine, int(samples)) for mine in mines]
-                for rea in realizaciones:
-                    for key in rea.keys():
+    for index1, samples in enumerate(valores_muestras):
+        (x, z), true_mi = signal_generator(mean=(0, 0), correlation_rho=RHO, samples=int(samples))
+        x_id, z_id = ray.put(x), ray.put(z)
+
+        for index2, neuronas in enumerate(valores_neuronas):
+            for index3, capas in enumerate(valores_capas):
+                rea_ids = []
+                for index4 in range(REA):
+                    # Paralelization line
+                    rea_ids.append(entrenar_red.remote(x_id, z_id, true_mi, neuronas, capas))
+
+                # Rupture of paralelization
+                for rea_data in ray.get(rea_ids):
+                    for key in rea_data.keys():
                         if key not in data.keys():
                             data[key] = []
-                        data[key].append(rea[key])
+                        data[key].append(rea_data[key])
                 # toc = time.time()
                 mines.clear()
                 # mostrar grado de avance
@@ -182,8 +183,19 @@ def main():
 
 
 def generate_aux_datafile():
-    # TODO: tambien agregar os parametros que son constantes y
-    #  comunes a todas las realizaciones
+    datos_comunes = {
+        "rho": RHO,
+        "funcion_activacion": ACT_FUNC,
+        "LR": LR,
+        "LR_patience": LR_PATIENCE,
+        "LR_factor": LR_FACTOR,
+        "minibatch_percentage": MINIBATCH_PERCENT,
+        "max_epoch": MAX_EPOCH,
+        "validation_avg": VALIDATION_AVG,
+        "stop_patience": STOP_PATIENCE,
+        "cuda": CUDA
+    }
+
     sim_iterables = {
         "rhos": rhos,
         "act_funcs": act_funcs,
@@ -191,9 +203,19 @@ def generate_aux_datafile():
         "valores_neuronas": valores_neuronas,
         "valores_muestras": valores_muestras,
     }
-    auxFile_name = f"{OUTDIR}/sim_iterables.txt"
+
+    auxFile_name = f"{OUTDIR}/sim_parameters.txt"
+
     if not os.path.exists(auxFile_name):
         with open(auxFile_name, 'w', encoding='utf-8') as auxFile:
+
+            # Escribo paramteros fijados
+            print("Los parametros fijados en esta corrida son: ", file=auxFile, flush=True)
+            for key in datos_comunes.keys():
+                print(f"{key} : {datos_comunes[key]}", file=auxFile)
+
+            # Escribo parametros variables de la simulacion
+            print("\nLos parametros variables en esta simulacion son: ", file=auxFile, flush=True)
             for key in sim_iterables.keys():
                 print(f"{key} : {sim_iterables[key]}", file=auxFile)
 
