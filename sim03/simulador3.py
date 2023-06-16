@@ -19,6 +19,12 @@ Sim_hostname='cluster-fiuner'
 #SBATCH --nodes=1
 #SBATCH --ntasks=24
 #SBATCH --tasks-per-node=24
+##SBATCH --partition=debug
+##SBATCH --nodes=1
+##SBATCH --ntasks=1
+##SBATCH --cpus-per-task=1
+##SBATCH --mem=8G
+##SBATCH --gres=gpu:1
 [endSlurmConfig]
 '''
 import numpy as np
@@ -57,8 +63,8 @@ VALIDATION_AVG = 100
 STOP_PATIENCE = 1000
 
 # Donde va a correr la simulacion
+# CUDA = "cpu"
 CUDA = "cuda:0" if torch.cuda.is_available() else "cpu"
-# cuda = "cpu"
 
 # Directorio con resultados
 sim = "sim03"
@@ -71,8 +77,9 @@ else:
     print(OUTDIR, "folder already exists.", flush=True)
 output_file = f"{OUTDIR}/{sim}_R{RHO_IDX}_A{ACT_IDX}.csv"
 
+
 # ##############  Inicializo ray  ###############
-ray.init(num_cpus=REA)
+# ray.init(num_cpus=REA)
 
 
 # ##############  Generacion de señales aleatorias  ###############
@@ -97,8 +104,8 @@ def signal_generator(mean=(0, 0), correlation_rho=0.5, samples=1000):
     return (x, z), true_mi
 
 
-# @ray.remote(num_cpus=1, num_gpus=0.125, max_calls=1)
-@ray.remote
+@ray.remote(num_cpus=1, num_gpus=0.125, max_calls=1)
+# @ray.remote
 def entrenar_red(x, z, true_mi,  neuronas:int, capas:int):
     # Instancio la red
     red = Mine2(capas, neuronas, ACT_FUNC, cuda=CUDA,
@@ -179,7 +186,7 @@ def main():
 
     # Pasamos el dataframe a un csv
     data_df = pd.DataFrame(data)
-    data_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file), index=False)
+    data_df.to_csv(output_file, mode='w', header=True, index=False)
 
 
 def generate_aux_datafile():
@@ -206,18 +213,18 @@ def generate_aux_datafile():
 
     auxFile_name = f"{OUTDIR}/sim_parameters.txt"
 
-    if not os.path.exists(auxFile_name):
-        with open(auxFile_name, 'w', encoding='utf-8') as auxFile:
+    # if not os.path.exists(auxFile_name):
+    with open(auxFile_name, 'w', encoding='utf-8') as auxFile:
 
-            # Escribo paramteros fijados
-            print("Los parametros fijados en esta corrida son: ", file=auxFile, flush=True)
-            for key in datos_comunes.keys():
-                print(f"{key} : {datos_comunes[key]}", file=auxFile)
+        # Escribo paramteros fijados
+        print("Los parametros fijados en esta corrida son: ", file=auxFile, flush=True)
+        for key in datos_comunes.keys():
+            print(f"{key} : {datos_comunes[key]}", file=auxFile)
 
-            # Escribo parametros variables de la simulacion
-            print("\nLos parametros variables en esta simulacion son: ", file=auxFile, flush=True)
-            for key in sim_iterables.keys():
-                print(f"{key} : {sim_iterables[key]}", file=auxFile)
+        # Escribo parametros variables de la simulacion
+        print("\nLos parametros variables en esta simulacion son: ", file=auxFile, flush=True)
+        for key in sim_iterables.keys():
+            print(f"{key} : {sim_iterables[key]}", file=auxFile)
 
 
 if __name__ == '__main__':
