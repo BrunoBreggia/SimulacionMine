@@ -17,8 +17,8 @@ Sim_hostname='cluster-fiuner'
 #SBATCH --mail-user=bruno.breggia@uner.edu.ar
 #SBATCH --partition=internos
 #SBATCH --nodes=1
-#SBATCH --ntasks=48
-#SBATCH --tasks-per-node=48
+#SBATCH --ntasks=24
+#SBATCH --tasks-per-node=24
 ##SBATCH --partition=debug
 ##SBATCH --nodes=1
 ##SBATCH --ntasks=1
@@ -34,21 +34,24 @@ import ray
 import time
 import pandas as pd
 from datetime import datetime
+import itertools
 from mine.mine2 import Mine2
+from ProcesamientoCamargo.generar_senial import obtener_senial
 
 # ############# variables de simulacion  ##############
 # Iterables de la simulacion
 ciclos = ["swing", "stance", "full"]
 valores_capas = [1, 2, 3]
 valores_neuronas = [50, 100, 200]
+foots = ["rtoe", "ltoe"]
+angles = ["rknee", "lknee"]
 
 # Indices fijados por simconfig
 CYCLE_IDX = 1
 DUMMY = 1
-REA = 48
+REA = 24
 
-# Constantes de archivo
-CYCLE = ciclos[CYCLE_IDX]
+# Constantes de la red
 ACT_FUNC = "relu"
 LR = 1e-3  # 0.001
 TRAIN_PERCENT = 80  # porcentaje respecto del total del dataset
@@ -58,6 +61,10 @@ LR_PATIENCE = 250
 LR_FACTOR = 0.5
 VALIDATION_AVG = 100
 STOP_PATIENCE = 1000
+
+# Constantes de la señal
+CYCLE = ciclos[CYCLE_IDX]
+NORM = False
 
 # Donde va a correr la simulacion
 # CUDA = "cpu"
@@ -80,7 +87,8 @@ output_file = f"{OUTDIR}/{sim}_{CYCLE}.csv"
 
 # @ray.remote(num_cpus=1, num_gpus=0.125, max_calls=1)
 @ray.remote
-def entrenar_red(x, z, true_mi,  neuronas:int, capas:int):
+def entrenar_red(x, z, foot_side, angle_description, angle_side,
+                 neuronas: int, capas: int):
     # Instancio la red
     red = Mine2(capas, neuronas, ACT_FUNC, cuda=CUDA,
                 validation_average=VALIDATION_AVG, stop_patience=STOP_PATIENCE)
@@ -99,6 +107,9 @@ def entrenar_red(x, z, true_mi,  neuronas:int, capas:int):
     # Parametros de la señal
     dataLocal["samples"] = len(x)
     dataLocal["ciclo"] = CYCLE
+    dataLocal["foot"] = foot_side
+    dataLocal["angle_description"] = angle_description
+    dataLocal["angle_side"] = angle_side
 
     # Parametros constructivos de la red
     dataLocal["capas"] = red.hiddenLayers
@@ -133,31 +144,36 @@ def main():
 
     data = {}
 
-    # for index1, samples in enumerate(valores_muestras):
-    #     (x, z), true_mi = signal_generator(mean=(0, 0), correlation_rho=RHO, samples=int(samples))
-    #     x_id, z_id = ray.put(x), ray.put(z)
+    for foot, angle in itertools.product(foots, angles):
+        # Obtencion de datos
+        signal = obtener_senial("DatosCamargo_nogc/AB06_mine_excluded_nogc.mat", foot, angle, CYCLE, norm=NORM)
+        x = signal.foot_height
+        z = signal.angle
+        foot_side = signal.foot_side
+        angle_description = signal.angle_description
+        angle_side = signal.angle_side
+        x_id, z_id = ray.put(x), ray.put(z)
 
-    # Obtencion de datos
-
-
-    for index1, neuronas in enumerate(valores_neuronas):
-        for index2, capas in enumerate(valores_capas):
-            rea_ids = []
-            for index3 in range(REA):
-                # Paralelization line
-                rea_ids.append(entrenar_red.remote(x_id, z_id, true_mi, neuronas, capas))
-
-            # Rupture of paralelization
-            for rea_data in ray.get(rea_ids):
-                for key in rea_data.keys():
-                    if key not in data.keys():
-                        data[key] = []
-                    data[key].append(rea_data[key])
-            # toc = time.time()
-            # mostrar grado de avance
-            counter += 1
-            progress = counter/cantidad_total * 100
-            print(f"Progress: {progress} %", flush=True)
+        # Instanciacion de la red
+        for neuronas in valores_neuronas:
+            for capas in valores_capas:
+                rea_ids = []
+                for index3 in range(REA):
+                    # Paralelization line
+                    rea_ids.append(entrenar_red.remote(x_id, z_id,
+                                                       foot_side, angle_description, angle_side,
+                                                       neuronas, capas))
+                # Confluence point
+                data.clear()
+                for rea_data in ray.get(rea_ids):
+                    for key in rea_data.keys():
+                        if key not in data.keys():
+                            data[key] = []
+                        data[key].append(rea_data[key])
+                # mostrar grado de avance
+                counter += 1
+                progress = counter/cantidad_total * 100
+                print(f"Progress: {progress} %", flush=True)
 
     # Pasamos el dataframe a un csv
     data_df = pd.DataFrame(data)
@@ -166,7 +182,7 @@ def main():
 
 def generate_aux_datafile():
     datos_comunes = {
-        "rho": RHO,
+        "ciclo": CYCLE,
         "funcion_activacion": ACT_FUNC,
         "LR": LR,
         "LR_patience": LR_PATIENCE,
@@ -179,11 +195,11 @@ def generate_aux_datafile():
     }
 
     sim_iterables = {
-        "rhos": rhos,
-        "act_funcs": act_funcs,
         "valores_capas": valores_capas,
         "valores_neuronas": valores_neuronas,
-        "valores_muestras": valores_muestras,
+        "ciclos": ciclos,
+        "foots": foots,
+        "angles": angles
     }
 
     auxFile_name = f"{OUTDIR}/sim_parameters.txt"
