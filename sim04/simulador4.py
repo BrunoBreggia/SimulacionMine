@@ -19,24 +19,17 @@ Sim_hostname='cluster-fiuner'
 #SBATCH --nodes=1
 #SBATCH --ntasks=24
 #SBATCH --tasks-per-node=24
-##SBATCH --partition=debug
-##SBATCH --nodes=1
-##SBATCH --ntasks=1
-##SBATCH --cpus-per-task=1
-##SBATCH --mem=8G
-##SBATCH --gres=gpu:1
 [endSlurmConfig]
 '''
 import numpy as np
 import torch
 import os
 import ray
-import time
 import pandas as pd
 from datetime import datetime
 import itertools
 from mine.mine2 import Mine2
-from ProcesamientoCamargo.generar_senial import obtener_senial
+from ProcesamientoCamargo.generador_datos import obtener_senial
 
 # ############# variables de simulacion  ##############
 # Iterables de la simulacion
@@ -85,7 +78,6 @@ output_file = f"{OUTDIR}/{sim}_{CYCLE}.csv"
 # ##############  Inicializo ray  ###############
 # ray.init(num_cpus=REA)
 
-# @ray.remote(num_cpus=1, num_gpus=0.125, max_calls=1)
 @ray.remote
 def entrenar_red(x, z, foot_side, angle_description, angle_side,
                  neuronas: int, capas: int):
