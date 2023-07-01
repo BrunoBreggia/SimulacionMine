@@ -29,7 +29,7 @@ import pandas as pd
 from datetime import datetime
 import itertools
 from mine.mine2 import Mine2
-from ProcesamientoCamargo.generador_datos import obtener_senial
+import generador_datos as gd
 
 # ############# variables de simulacion  ##############
 # Iterables de la simulacion
@@ -131,20 +131,24 @@ def entrenar_red(x, z, foot_side, angle_description, angle_side,
 
 def main():
 
-    cantidad_total = len(valores_neuronas)*len(valores_capas)
+    cantidad_total = len(valores_neuronas)*len(valores_capas)*len(foots)*len(angles)
     counter = 0
 
     data = {}
 
     for foot, angle in itertools.product(foots, angles):
         # Obtencion de datos
-        signal = obtener_senial("DatosCamargo_nogc/AB06_mine_excluded_nogc.mat", foot, angle, CYCLE, norm=NORM)
-        x = signal.foot_height
-        z = signal.angle
+        signal = gd.obtener_senial("../../DatosCamargo_nogc/AB06_mine_excluded_nogc.mat", foot, angle, CYCLE, norm=NORM)
+        fh = torch.from_numpy(signal.foot_height).type(torch.FloatTensor)
+        ang = torch.from_numpy(signal.angle).type(torch.FloatTensor)
         foot_side = signal.foot_side
         angle_description = signal.angle_description
         angle_side = signal.angle_side
-        x_id, z_id = ray.put(x), ray.put(z)
+
+        # Reshape Tensors
+        fh = fh.reshape((len(fh), 1))
+        ang = ang.reshape((len(ang), 1))
+        x_id, z_id = ray.put(fh), ray.put(ang)
 
         # Instanciacion de la red
         for neuronas in valores_neuronas:
@@ -156,7 +160,6 @@ def main():
                                                        foot_side, angle_description, angle_side,
                                                        neuronas, capas))
                 # Confluence point
-                data.clear()
                 for rea_data in ray.get(rea_ids):
                     for key in rea_data.keys():
                         if key not in data.keys():
