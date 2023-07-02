@@ -54,7 +54,7 @@ LR_FACTOR = 0.5
 VALIDATION_AVG = 100
 STOP_PATIENCE = 1000
 
-# Constantes de la señal
+# Constantes de la senal
 CYCLE = ciclos[CYCLE_IDX]
 NORM = False
 
