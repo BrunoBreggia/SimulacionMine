@@ -95,7 +95,7 @@ def entrenar_red(x, z, foot_side, angle_description, angle_side,
     # # Almacenamiento de datos de la realizacion # #
     dataLocal = {}
 
-    # Parametros de la señal
+    # Parametros de la senal
     dataLocal["samples"] = len(x)
     dataLocal["ciclo"] = CYCLE
     dataLocal["foot"] = foot_side
