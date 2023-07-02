@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
-Simulacion para probar los efectos de los distintos parámetros de red en
-la estimación de información mutua de señales aleatorias con distribución gaussiana.
-Se usará la implementación tradicional de MINE (Mutual information neural estimator).
-
+Evaluacion de la informacion mutua entre las senales biomecanicas de la altura del pie
+y apertura angular de la rodilla en un sujeto de la base de datos de Camargo. Se emplea
+la version 2 de Mine, probada en sim03.
 --------------------------------------------------------------------------------------
 [SimConfig]
 Sim_filename='Exp04'
