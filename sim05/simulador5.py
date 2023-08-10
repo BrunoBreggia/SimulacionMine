@@ -172,7 +172,7 @@ def main():
 
     for foot, angle in itertools.product(foots, angles):
         # Obtencion de datos
-        signal = gd.obtener_senial("../../DatosCamargo_nogc/AB06_mine_excluded_nogc.mat", foot, angle, CYCLE, norm=NORM)
+        signal = gd.obtener_senial("../../DatosCamargo_nogc/" + SUJETO, foot, angle, CYCLE, norm=NORM)
         # foot height
         fh = torch.from_numpy(signal.foot_height).type(torch.FloatTensor)
         # articular angle
