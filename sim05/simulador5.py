@@ -75,7 +75,7 @@ angles = ['rankle',
 # Indices fijados por simconfig
 CYCLE_IDX = 1
 SUJETO_IDX = 1
-REA = 48
+REA = 2  # 48
 
 # Constantes de la red
 ACT_FUNC = "relu"
