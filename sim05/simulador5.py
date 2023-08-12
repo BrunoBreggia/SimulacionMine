@@ -8,8 +8,8 @@ con tres capas, 50 neuronas en cada una, y funcion de activacion ReLU.
 --------------------------------------------------------------------------------------
 [SimConfig]
 Sim_filename='Exp05'
-Sim_variables={'CYCLE_IDX':[0,1,2]}
-Sim_realizations={'SUJETO_IDX':[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]}
+Sim_variables={'CYCLE_IDX':[0,1,2,3]}
+Sim_realizations={'SUJETO_IDX':22}
 Sim_name='E05'
 Sim_hostname='cluster-fiuner'
 [endSimConfig]
@@ -75,7 +75,7 @@ angles = ['rankle',
 # Indices fijados por simconfig
 CYCLE_IDX = 1
 SUJETO_IDX = 1
-REA = 2  # 48
+REA = 48
 
 # Constantes de la red
 ACT_FUNC = "relu"
@@ -92,7 +92,7 @@ STOP_PATIENCE = 1000
 
 # Constantes de la senal
 CYCLE = ciclos[CYCLE_IDX]
-SUJETO = file_list[SUJETO_IDX]
+SUJETO = file_list[SUJETO_IDX - 1]
 NORM = False
 
 # Donde va a correr la simulacion
