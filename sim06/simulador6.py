@@ -5,7 +5,7 @@ Evaluacion de la informacion mutua entre las senales biomecanicas de la altura d
 y apertura angular de las articulaciones del miembro inferior. Probado para todos los
 sujetos de la base de datos de Camargo. Se emplea la version 2 de Mine, probada en sim03,
 con tres capas, 50 neuronas en cada una, y funcion de activacion ReLU.
-Se prueba con señales de marcha RAPIDA.
+Se prueba con senales de marcha RAPIDA.
 --------------------------------------------------------------------------------------
 [SimConfig]
 Sim_filename='Exp06'
