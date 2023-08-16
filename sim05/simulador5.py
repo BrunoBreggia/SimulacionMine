@@ -54,7 +54,7 @@ file_list = ['AB06_mine_excluded_nogc.mat',
              'AB24_mine_excluded_nogc.mat',
              'AB25_mine_excluded_nogc.mat',
              'AB27_mine_excluded_nogc.mat',
-             'AB29_mine_excluded_nogc.mat',
+             'AB28_mine_excluded_nogc.mat',
              'AB30_mine_excluded_nogc.mat',
              ]
 foots = ["rtoe", "ltoe"]
@@ -96,8 +96,8 @@ SUJETO = file_list[SUJETO_IDX - 1]
 NORM = False
 
 # Donde va a correr la simulacion
-# CUDA = "cpu"
-CUDA = "cuda:0" if torch.cuda.is_available() else "cpu"
+CUDA = "cpu"
+# CUDA = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 # Directorio con resultados
 sim = "sim05"
@@ -172,7 +172,7 @@ def main():
 
     for foot, angle in itertools.product(foots, angles):
         # Obtencion de datos
-        signal = gd.obtener_senial("../../DatosCamargo_nogc/" + SUJETO, foot, angle, CYCLE, norm=NORM)
+        signal = gd.obtener_senial("../../camargoDB/datosMine/" + SUJETO, foot, angle, CYCLE, norm=NORM)
         # foot height
         fh = torch.from_numpy(signal.foot_height).type(torch.FloatTensor)
         # articular angle
