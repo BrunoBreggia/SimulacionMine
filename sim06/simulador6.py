@@ -55,7 +55,7 @@ file_list = ['AB06_fast.mat',
              'AB24_fast.mat',
              'AB25_fast.mat',
              'AB27_fast.mat',
-             'AB29_fast.mat',
+             'AB28_fast.mat',
              'AB30_fast.mat',
              ]
 foots = ["rtoe", "ltoe"]
