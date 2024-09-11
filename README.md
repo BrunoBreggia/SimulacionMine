@@ -14,7 +14,7 @@ realizaciones con la siguiente combinación de parámteros:
    * Cantidad de neuronas por capa: 25, 50, 100, 200
    * Funciones de activación: relu, leaky relu, elu, gelu
    * Particionado del batch: 25%, 50%, 100% del tamaño del dataset
-   * Versión [Mine 1](mine/mine.py), con su variante 
+   * Versión [Mine 1](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine.py), con su variante 
    tradicional y su variante MINE EMA (ver paper de Belghazi _et al_)
 
 Los resultados con MINE EMA mostraron resultados menos satisfactorios que
