@@ -32,7 +32,7 @@ realizaciones con la siguiente combinación de parámteros:
    * Cantidad de neuronas por capa: 30, 60, 90
    * Funciones de activación: relu
    * Particionado del batch: 1%, 10%, 100% del tamaño del dataset
-   * Versión Mine: [Mine 2](mine/mine2.py) (MINE tradicional)
+   * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
    
 ---
 
@@ -45,7 +45,7 @@ realizaciones con la siguiente combinación de parámteros:
    * Cantidad de neuronas por capa: 50, 100, 200
    * Funciones de activación: relu, leaky relu, elu
    * Particionado del batch: 10% del tamaño del dataset
-   * Versión Mine: [Mine 2,](mine/mine2.py) (MINE tradicional)
+   * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
    
 ---
 
@@ -58,7 +58,7 @@ combinación de parámteros:
    * Cantidad de neuronas por capa: 50, 100, 200
    * Funciones de activación: relu, leaky relu, elu
    * Particionado del batch: 10% del tamaño del dataset
-   * Versión Mine: [Mine 2](mine/mine2.py) (MINE tradicional)
+   * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
 
 Los resultados de esta simulación sirvieron para una publicación en el 
    congreso de RPIC 2023 en Oberá, Misiones, y para un póster en las 
@@ -77,7 +77,7 @@ combinación de parámteros:
    * Cantidad de neuronas por capa: 50
    * Funciones de activación: relu
    * Particionado del batch: 10% del tamaño del dataset
-   * Versión Mine: [Mine 2](mine/mine2.py) (MINE tradicional)
+   * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
 
 Se evalúa la información con señales de marcha a velocidad normal. 
 La principal finalidad es comparar con los resultados de Restrepo _et al_.
@@ -94,7 +94,7 @@ siguiente combinación de parámteros:
    * Cantidad de neuronas por capa: 50
    * Funciones de activación: relu
    * Particionado del batch: 10% del tamaño del dataset
-   * Versión Mine: [Mine 2](mine/mine2.py) (MINE tradicional)
+   * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
 
 Estos son los resultados que se interpretan en el proyecto.
 
