@@ -58,6 +58,7 @@ combinación de parámteros:
    * Cantidad de neuronas por capa: 50, 100, 200
    * Funciones de activación: relu, leaky relu, elu
    * Particionado del batch: 10% del tamaño del dataset
+   * Fases de marcha: ciclo completo, vuelo, apoyo, apoyo H
    * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
 
 Los resultados de esta simulación sirvieron para una publicación en el 
@@ -77,6 +78,7 @@ combinación de parámteros:
    * Cantidad de neuronas por capa: 50
    * Funciones de activación: relu
    * Particionado del batch: 10% del tamaño del dataset
+   * Fases de marcha: ciclo completo, vuelo, apoyo, apoyo H
    * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
 
 Se evalúa la información con señales de marcha a velocidad normal. 
@@ -94,6 +96,7 @@ siguiente combinación de parámteros:
    * Cantidad de neuronas por capa: 50
    * Funciones de activación: relu
    * Particionado del batch: 10% del tamaño del dataset
+   * Fases de marcha: ciclo completo, vuelo, apoyo, apoyo H
    * Versión Mine: [Mine 2](https://github.com/BrunoBreggia/CodigoMine/blob/main/mine/mine2.py) (MINE tradicional)
 
 Estos son los resultados que se interpretan en el proyecto.
