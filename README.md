@@ -49,7 +49,7 @@ realizaciones con la siguiente combinación de parámteros:
    
 ---
 
-4. **Sim04**: Evaluación de la informacion mutua entre senales biomecanicas,
+4. **Sim04**: Evaluación de la informacion mutua entre señales biomecanicas,
 a ser altura del pie y apertura angular de la rodilla en el sujeto 06 de la 
 base de datos de Camargo _et al_. Se realizaron 24 realizaciones con la siguiente 
 combinación de parámteros:
@@ -67,7 +67,7 @@ Los resultados de esta simulación sirvieron para una publicación en el
 
 ---
 
-5. **Sim05**: Evaluación de la información mutua entre las senales 
+5. **Sim05**: Evaluación de la información mutua entre las señales 
 biomecánicas de la altura del pie y apertura angular de las articulaciones
 del miembro inferior. Probado para todos los sujetos de la base de datos de
 Camargo _et al_. Se realizaron 48 realizaciones con la siguiente 
