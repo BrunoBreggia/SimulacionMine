@@ -10,7 +10,7 @@ realizaciones con la siguiente combinación de parámteros:
    * Cantidad de muestras: 512, 1024, 2048, 4096, 8192, 16384
    * Coeficiente de correlación: 0, 0.5, 0.7, 0.98
    * Épocas de entrenamiento: 256, 512, 1024, 2048
-   * Cantidad de capas: 3, 4, 5
+   * Cantidad de capas: 3, 4, 5 
    * Cantidad de neuronas por capa: 25, 50, 100, 200
    * Funciones de activación: relu, leaky relu, elu, gelu
    * Particionado del batch: 25%, 50%, 100% del tamaño del dataset
